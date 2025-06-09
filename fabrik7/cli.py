@@ -1,11 +1,17 @@
 import logging
 import time
+from pathlib import Path
+from typing import Literal
 
 import click
 
-from fabrik7.servers import PLCSpec, launch
+from fabrik7.config.loader import ConfigLoader
+from fabrik7.config.models import DB, PLC, Field
+from fabrik7.servers import launch
 
 logger = logging.getLogger(__name__)
+
+DType = Literal['BOOL', 'BYTE', 'CHAR', 'WORD', 'DWORD', 'INT', 'DINT', 'REAL', 'LREAL', 'STRING']
 
 
 @click.group()
@@ -30,12 +36,27 @@ def cli(log_level: str) -> None:
 @click.option('--port', '-p', default=2000, help='Initial port to listen on.')
 @click.option('--db-size', '-s', default=1024, help='Size of the database in bytes.')
 @click.option('--db-number', '-n', default=1, help='Number of databases by PLC.')
-def start(count: int, port: int, db_size: int, db_number: int) -> None:
-    specs = [PLCSpec(name=f'PLC{i + 1}', port=port + i, db_size=db_size, db_number=db_number) for i in range(count)]
-    launch(specs)
+@click.option(
+    '--dtype',
+    '-t',
+    default='BOOL',
+    type=click.Choice(['BOOL', 'BYTE', 'CHAR', 'WORD', 'DWORD', 'INT', 'DINT', 'REAL', 'LREAL', 'STRING']),
+    help='Type of the field.',
+)
+@click.option('--config-file', '-f', default=None, help='Configuration file (yaml, yml and json).')
+def start(count: int, port: int, db_size: int, db_number: int, dtype: DType, config_file: Path | None) -> None:
+    if config_file:
+        config = ConfigLoader.load(config_file)
+        plcs = config.plcs
+    else:
+        fields = [Field(name=f'Field{i}', offset=i * db_size, dtype=dtype) for i in range(db_number)]
+        plcs = [
+            PLC(name=f'PLC{i}', port=port + i, dbs=[DB(number=i + 1, size=db_size, fields=fields)])
+            for i in range(count)
+        ]
 
-    logger.info(f'{count} PLCs running on ports {port} - {port + count - 1}')
-    logger.info('Press Ctrl+C to exit')
+    started_servers = launch(plcs)
+    logger.info(f'Started {len(started_servers)} servers.')
 
     while True:
         time.sleep(1)

@@ -1,33 +1,28 @@
 import ctypes
 import logging
 import time
-from dataclasses import dataclass
 from threading import Thread
 
 import snap7
 
-
-@dataclass
-class PLCSpec:
-    name: str
-    port: int
-    db_number: int = 1
-    db_size: int = 1024
+from fabrik7.config.models import PLC
 
 
 class PLCThread(Thread):
-    def __init__(self, spec: PLCSpec, log: bool = True) -> None:
+    def __init__(self, plc: PLC) -> None:
         super().__init__(daemon=True)
-        self.spec = spec
-        self.log = log
+        self.plc = plc
         self.__server = snap7.server.Server()
-        self.__logger = logging.getLogger(self.spec.name)
+        self.__logger = logging.getLogger(self.plc.name)
+        self.__db_buffers: dict[int, ctypes.Array] = {}
 
-        self.__db_buffer = (ctypes.c_uint8 * spec.db_size)()
-        self.__server.register_area(snap7.type.SrvArea.DB, spec.db_number, self.__db_buffer)
+        for db in plc.dbs:
+            buffer = (ctypes.c_uint8 * db.size)()
+            self.__server.register_area(snap7.type.SrvArea.DB, db.number, buffer)
+            self.__db_buffers[db.number] = buffer
 
     def run(self) -> None:
-        self.__server.start(tcp_port=self.spec.port)
+        self.__server.start(tcp_port=self.plc.port)
 
         try:
             while True:
@@ -40,11 +35,11 @@ class PLCThread(Thread):
             self.__server.destroy()
 
 
-def launch(specs: list[PLCSpec], log: bool = True) -> dict[int, PLCThread]:
+def launch(specs: list[PLC]) -> dict[int, PLCThread]:
     threads = {}
 
     for spec in specs:
-        t = PLCThread(spec, log)
+        t = PLCThread(spec)
         t.start()
         threads[spec.port] = t
 
