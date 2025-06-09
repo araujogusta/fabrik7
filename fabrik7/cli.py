@@ -1,17 +1,15 @@
 import logging
 import time
 from pathlib import Path
-from typing import Literal
+from typing import Any
 
 import click
 
 from fabrik7.config.loader import ConfigLoader
-from fabrik7.config.models import DB, PLC, Field
+from fabrik7.config.models import DB, PLC, Field, _DType
 from fabrik7.servers import launch
 
 logger = logging.getLogger(__name__)
-
-DType = Literal['BOOL', 'BYTE', 'CHAR', 'WORD', 'DWORD', 'INT', 'DINT', 'REAL', 'LREAL', 'STRING']
 
 
 @click.group()
@@ -40,16 +38,19 @@ def cli(log_level: str) -> None:
     '--dtype',
     '-t',
     default='BOOL',
-    type=click.Choice(['BOOL', 'BYTE', 'CHAR', 'WORD', 'DWORD', 'INT', 'DINT', 'REAL', 'LREAL', 'STRING']),
+    type=click.Choice(['BOOL', 'BYTE', 'CHAR', 'WORD', 'DWORD', 'INT', 'DINT', 'REAL', 'LREAL']),
     help='Type of the field.',
 )
+@click.option('--value', '-v', default='0', help='Value of the field.')
 @click.option('--config-file', '-f', default=None, help='Configuration file (yaml, yml and json).')
-def start(count: int, port: int, db_size: int, db_number: int, dtype: DType, config_file: Path | None) -> None:  # noqa: PLR0913
+def start(  # noqa: PLR0913
+    count: int, port: int, db_size: int, db_number: int, dtype: _DType, value: Any, config_file: Path | None
+) -> None:
     if config_file:
         config = ConfigLoader.load(config_file)
         plcs = config.plcs
     else:
-        fields = [Field(name=f'Field{i}', offset=i * db_size, dtype=dtype) for i in range(db_number)]
+        fields = [Field(name=f'Field{i}', offset=i * db_size, dtype=dtype, value=value) for i in range(db_number)]
         plcs = [
             PLC(name=f'PLC{i}', port=port + i, dbs=[DB(number=i + 1, size=db_size, fields=fields)])
             for i in range(count)

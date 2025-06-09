@@ -12,9 +12,9 @@ class ConfigLoader:
     """Load config files (.yaml/.yml ou .json) and return a Config object."""
 
     __PARSERS: Mapping[str, Callable[[str], dict]] = {
-        ".yaml": yaml.safe_load,
-        ".yml": yaml.safe_load,
-        ".json": json.loads,
+        '.yaml': yaml.safe_load,
+        '.yml': yaml.safe_load,
+        '.json': json.loads,
     }
 
     @classmethod
@@ -39,7 +39,4 @@ class ConfigLoader:
         ext = path.suffix.lower()
         if parser := cls.__PARSERS.get(ext):
             return parser
-        raise ValueError(
-            f"Extensão não suportada: {ext}. "
-            "Use .yaml, .yml ou .json."
-        )
+        raise ValueError(f'Extensão não suportada: {ext}. Use .yaml, .yml ou .json.')
