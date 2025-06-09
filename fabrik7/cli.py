@@ -44,7 +44,7 @@ def cli(log_level: str) -> None:
     help='Type of the field.',
 )
 @click.option('--config-file', '-f', default=None, help='Configuration file (yaml, yml and json).')
-def start(count: int, port: int, db_size: int, db_number: int, dtype: DType, config_file: Path | None) -> None:
+def start(count: int, port: int, db_size: int, db_number: int, dtype: DType, config_file: Path | None) -> None:  # noqa: PLR0913
     if config_file:
         config = ConfigLoader.load(config_file)
         plcs = config.plcs
