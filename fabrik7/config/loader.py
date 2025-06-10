@@ -21,7 +21,7 @@ class ConfigLoader:
     def load(cls, path: str | Path) -> Config:
         """Reads *path*, validates against the schema, and returns Config."""
         path = Path(path)
-        parser = cls.__pick_parser(path)
+        parser = cls._pick_parser(path)
 
         raw_text = path.read_text()
         try:
@@ -35,7 +35,7 @@ class ConfigLoader:
             raise ValueError(f"Configuração inválida em '{path.name}':\n{err}") from err
 
     @classmethod
-    def __pick_parser(cls, path: Path) -> Callable[[str], dict]:
+    def _pick_parser(cls, path: Path) -> Callable[[str], dict]:
         ext = path.suffix.lower()
         if parser := cls.__PARSERS.get(ext):
             return parser

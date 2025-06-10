@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import time
 from pathlib import Path
@@ -7,9 +8,37 @@ import click
 
 from fabrik7.config.loader import ConfigLoader
 from fabrik7.config.models import DB, PLC, Field, _DType
-from fabrik7.servers import launch
+from fabrik7.servers import PLCThread, launch
 
 logger = logging.getLogger(__name__)
+
+
+def _start_from_config(config_file: Path) -> dict[str, PLCThread]:
+    config = ConfigLoader.load(config_file)
+    return launch(config.plcs)
+
+
+def _start_with_watch(config_path: Path) -> None:
+    last_config_file_hash = None
+    threads = _start_from_config(config_path)
+
+    logger.info(f'Observando {config_path} por mudanças...')
+    while True:
+        current_config_file_hash = hashlib.sha256(Path(config_path).read_bytes()).hexdigest()
+
+        if not current_config_file_hash == last_config_file_hash:
+            last_config_file_hash = current_config_file_hash
+
+            config = ConfigLoader.load(config_path)
+            for plc in config.plcs:
+                thread = threads.get(plc.name, None)
+
+                if not thread:
+                    continue
+
+                thread.update(plc)
+
+        time.sleep(1)
 
 
 @click.group()
@@ -47,8 +76,7 @@ def start(  # noqa: PLR0913
     count: int, port: int, db_size: int, db_number: int, dtype: _DType, value: Any, config_file: Path | None
 ) -> None:
     if config_file:
-        config = ConfigLoader.load(config_file)
-        plcs = config.plcs
+        _start_with_watch(config_file)
     else:
         fields = [Field(name=f'Field{i}', offset=i * db_size, dtype=dtype, value=value) for i in range(db_number)]
         plcs = [
