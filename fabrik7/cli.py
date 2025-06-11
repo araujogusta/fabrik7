@@ -60,7 +60,7 @@ def cli(log_level: str) -> None:
 
 @cli.command()
 @click.option('--count', '-c', default=1, help='Number of PLCs to simulate.')
-@click.option('--port', '-p', default=2000, help='Initial port to listen on.')
+@click.option('--port', '-p', default=102, help='Initial port to listen on.')
 @click.option('--db-size', '-s', default=1024, help='Size of the database in bytes.')
 @click.option('--db-number', '-n', default=1, help='Number of databases by PLC.')
 @click.option(
