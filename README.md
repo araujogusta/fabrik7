@@ -33,7 +33,7 @@ uv pip install -e .
 ### Command Structure
 
 ```bash
-fabrik7 [--log-level <level>] start [--count <n>] [--port <port>] [--db-size <size>] [--db-number <num>] [--dtype <type>] [--config-file <path>]
+fabrik7 [--log-level <level>] start [--count <n>] [--host <host>] [--port <port>] [--db-size <size>] [--db-number <num>] [--field-number <num>] [--field-type <type>] [--config-file <path>]
 ```
 
 ### Practical Examples
@@ -43,7 +43,7 @@ fabrik7 [--log-level <level>] start [--count <n>] [--port <port>] [--db-size <si
 fabrik7 start
 
 # Example 2: Simulate 5 PLCs, ports starting from 3000, DB of 2048 bytes, 2 DBs per PLC, REAL type
-fabrik7 start --count 5 --port 3000 --db-size 2048 --db-number 2 --dtype REAL
+fabrik7 start --count 5 --host 127.0.0.1 --port 3000 --db-size 2048 --db-number 2 --dtype REAL
 
 # Example 3: Load configurations from a YAML file
 fabrik7 start --config-file config.yaml
@@ -51,10 +51,10 @@ fabrik7 start --config-file config.yaml
 
 ## ⚙️ Commands
 
-| Command   | Options                                                                                                                                                          | Description                                                             |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `fabrik7` | `-l`, `--log-level`                                                                                                                                             | Defines the log level (`DEBUG`, `INFO`, `WARN`, `ERROR`, `CRITICAL`)  |
-| `start`   | `-c`, `--count` <n><br>`-p`, `--port` <port><br>`-s`, `--db-size` <size><br>`-n`, `--db-number` <num><br>`-t`, `--dtype` <type><br>`-f`, `--config-file` <path> | Starts servers simulating PLCs with the specified options          |
+| Command   | Options                                                                                                                                                                                                                  | Description                                                          |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `fabrik7` | `-l`, `--log-level`                                                                                                                                                                                                      | Defines the log level (`DEBUG`, `INFO`, `WARN`, `ERROR`, `CRITICAL`) |
+| `start`   | `-c`, `--count` <n><br>`-h`, `--host` <host><br>`-p`, `--port` <port><br>`-s`, `--db-size` <size><br>`-n`, `--db-number` <num><br>`-m`, `--field-number` <num><br>`-t`, `--dtype` <type><br>`-f`, `--config-file` <path> | Starts servers simulating PLCs with the specified options            |
 ## 🔧 Configuration
 
 ### YAML Configuration Schema
@@ -62,6 +62,7 @@ fabrik7 start --config-file config.yaml
 ```yaml
 plcs:
   - name: PLCName
+    host: 127.0.0.1
     port: 2000
     dbs:
       - number: 1
@@ -80,6 +81,7 @@ plcs:
     "plcs": [
         {
             "name": "PLC0",
+            "host": "127.0.0.1",
             "port": 2000,
             "dbs": [
                 {
