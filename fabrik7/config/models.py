@@ -2,13 +2,13 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 
-_DType = Literal['BOOL', 'BYTE', 'CHAR', 'WORD', 'DWORD', 'INT', 'DINT', 'REAL', 'LREAL']
+FieldType = Literal['BOOL', 'BYTE', 'CHAR', 'WORD', 'DWORD', 'INT', 'DINT', 'REAL', 'LREAL']
 
 
 class Field(BaseModel):
     name: str
     offset: int
-    dtype: _DType
+    type: FieldType
     value: Optional[Any]
 
     model_config = ConfigDict(from_attributes=True)

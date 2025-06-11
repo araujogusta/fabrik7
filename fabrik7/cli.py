@@ -1,4 +1,5 @@
 import hashlib
+import ipaddress
 import logging
 import time
 from pathlib import Path
@@ -7,27 +8,56 @@ from typing import Any
 import click
 
 from fabrik7.config.loader import ConfigLoader
-from fabrik7.config.models import DB, PLC, Field, _DType
-from fabrik7.servers import PLCThread, launch
+from fabrik7.config.models import DB, PLC, Field, FieldType
+from fabrik7.servers import launch
 
 logger = logging.getLogger(__name__)
+FIELD_TYPE_SIZES = {
+    'BOOL': 1,
+    'BYTE': 1,
+    'CHAR': 1,
+    'WORD': 2,
+    'DWORD': 4,
+    'INT': 2,
+    'DINT': 4,
+    'REAL': 4,
+    'LREAL': 8,
+}
 
 
-def _start_from_config(config_file: Path) -> dict[str, PLCThread]:
-    config = ConfigLoader.load(config_file)
-    return launch(config.plcs)
+def _start(  # noqa: PLR0913
+    count: int, host: str, port: int, db_size: int, db_number: int, field_number: int, field_type: FieldType, value: Any
+) -> None:
+    field_size = FIELD_TYPE_SIZES.get(field_type, 0)
+    fields = [
+        Field(name=f'Field:{i}', offset=field_size * i, type=field_type, value=value) for i in range(field_number)
+    ]
+    dbs = [DB(number=i + 1, size=db_size, fields=fields) for i in range(db_number)]
+
+    base_ip_address = ipaddress.IPv4Address(host)
+    plcs: list[PLC] = []
+    for i in range(count):
+        ip_address = str(base_ip_address + i)
+        plc = PLC(name=f'PLC:{i}', host=ip_address, port=port, dbs=dbs)
+        plcs.append(plc)
+
+    launch(plcs)
+
+    while True:
+        time.sleep(1)
 
 
 def _start_with_watch(config_path: Path) -> None:
     last_config_file_hash = None
-    threads = _start_from_config(config_path)
+    config = ConfigLoader.load(config_path)
+    threads = launch(config.plcs)
 
     logger.info(f'Watching {config_path} for changes...')
     while True:
         current_config_file_hash = hashlib.sha256(Path(config_path).read_bytes()).hexdigest()
 
         if not current_config_file_hash == last_config_file_hash:
-            logger.info(f'A change was detected. Updating PLCs...')
+            logger.info('A change was detected. Updating PLCs...')
             last_config_file_hash = current_config_file_hash
 
             config = ConfigLoader.load(config_path)
@@ -65,8 +95,9 @@ def cli(log_level: str) -> None:
 @click.option('--port', '-p', default=102, help='Initial port to listen on.')
 @click.option('--db-size', '-s', default=1024, help='Size of the database in bytes.')
 @click.option('--db-number', '-n', default=1, help='Number of databases by PLC.')
+@click.option('--field-number', '-fn', default=1, help='Number of fields by DB.')
 @click.option(
-    '--dtype',
+    '--field-type',
     '-t',
     default='BOOL',
     type=click.Choice(['BOOL', 'BYTE', 'CHAR', 'WORD', 'DWORD', 'INT', 'DINT', 'REAL', 'LREAL']),
@@ -75,20 +106,21 @@ def cli(log_level: str) -> None:
 @click.option('--value', '-v', default='0', help='Value of the field.')
 @click.option('--config-file', '-f', default=None, help='Configuration file (yaml, yml and json).')
 def start(  # noqa: PLR0913
-    count: int, host: str, port: int, db_size: int, db_number: int, dtype: _DType, value: Any, config_file: Path | None
+    count: int,
+    host: str,
+    port: int,
+    db_size: int,
+    db_number: int,
+    field_number: int,
+    field_type: FieldType,
+    value: Any,
+    config_file: Path | None,
 ) -> None:
-    if config_file:
-        _start_with_watch(config_file)
-    else:
-        field = Field(name='Field', offset=0, dtype=dtype, value=value)
-        dbs = [DB(number=i + 1, size=db_size, fields=[field]) for i in range(db_number)]
-        plcs = [PLC(name=f'PLC{i}', host=host, port=port + i, dbs=dbs) for i in range(count)]
+    if not config_file:
+        _start(count, host, port, db_size, db_number, field_number, field_type, value)
+        return
 
-    started_servers = launch(plcs)
-    logger.info(f'Started {len(started_servers)} servers.')
-
-    while True:
-        time.sleep(1)
+    _start_with_watch(config_file)
 
 
 if __name__ == '__main__':

@@ -52,10 +52,10 @@ class PLCThread(Thread):
         """Writes a single field value to the buffer."""
         snap7_buffer = bytearray(buffer)
 
-        writer = WRITE_FUNCTIONS.get(field.dtype)
+        writer = WRITE_FUNCTIONS.get(field.type)
 
         if not writer:
-            raise ValueError(f'Unsupported type: {field.dtype}')
+            raise ValueError(f'Unsupported type: {field.type}')
 
         writer(snap7_buffer, field.offset, field.value)
         src_ptr = (ctypes.c_char * len(snap7_buffer)).from_buffer(snap7_buffer)
