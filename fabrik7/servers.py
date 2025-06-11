@@ -64,7 +64,7 @@ class PLCThread(Thread):
         ctypes.memmove(dest_ptr, src_ptr, len(snap7_buffer))
 
     def run(self) -> None:
-        self._server.start(tcp_port=self.plc.port)
+        self._server.start_to(self.plc.host, self.plc.port)
 
         try:
             while True:

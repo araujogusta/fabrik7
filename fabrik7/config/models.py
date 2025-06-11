@@ -24,7 +24,8 @@ class DB(BaseModel):
 
 class PLC(BaseModel):
     name: str
-    port: int
+    host: Optional[str] = '127.0.0.1'
+    port: Optional[int] = 102
     dbs: list[DB]
 
     model_config = ConfigDict(from_attributes=True)
