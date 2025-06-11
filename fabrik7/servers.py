@@ -41,7 +41,7 @@ class PLCThread(Thread):
         """Initializes the DB values based on the PLC configuration."""
         for db in self.plc.dbs:
             buffer = self._db_buffers[db.number]
-            
+
             for field in db.fields:
                 if field.value is None:
                     continue

@@ -78,11 +78,9 @@ def start(  # noqa: PLR0913
     if config_file:
         _start_with_watch(config_file)
     else:
-        fields = [Field(name=f'Field{i}', offset=i * db_size, dtype=dtype, value=value) for i in range(db_number)]
-        plcs = [
-            PLC(name=f'PLC{i}', port=port + i, dbs=[DB(number=i + 1, size=db_size, fields=fields)])
-            for i in range(count)
-        ]
+        field = Field(name='Field', offset=0, dtype=dtype, value=value)
+        dbs = [DB(number=i + 1, size=db_size, fields=[field]) for i in range(db_number)]
+        plcs = [PLC(name=f'PLC{i}', port=port + i, dbs=dbs) for i in range(count)]
 
     started_servers = launch(plcs)
     logger.info(f'Started {len(started_servers)} servers.')
